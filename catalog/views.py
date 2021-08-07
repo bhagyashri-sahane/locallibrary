@@ -9,7 +9,8 @@ from django.views import generic
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 
 from catalog import models
-from catalog.forms import RenewBookForm
+from catalog import forms
+from catalog.forms import RenewBookForm, ReturnBookForm
 
 from .models import Author, Book, BookInstance, Genre
 
@@ -47,7 +48,7 @@ def index(request):
 
 class BookListView(generic.ListView):
     model = Book
-    paginate_by = 5
+    paginate_by = 10
 
 
 class BookDetailView(generic.DetailView):
@@ -100,6 +101,31 @@ def renew_book_librarian(request, pk):
     }
 
     return render(request, 'catalog/book_renew_librarian.html', context)
+
+
+@login_required
+@permission_required('catalog.can_mark_returned', raise_exception=True)
+def book_return(request, pk):
+    book_instance = get_object_or_404(BookInstance, pk=pk)
+
+    if request.method == 'POST':
+        form = ReturnBookForm(request.POST)
+        if form.is_valid():
+            book_instance.status = form.cleaned_data['status']
+            book_instance.save()
+
+            return HttpResponseRedirect(reverse('all-borrowed') )
+
+    else:
+        status = BookInstance.LOAN_STATUS[2]
+        form = ReturnBookForm(initial={'status': status})
+
+    context = {
+        'form': form,
+        'book_instance': book_instance,
+    }
+
+    return render(request, 'catalog/book_return.html', context)
 
 class AuthorCreate(CreateView):
     model = Author

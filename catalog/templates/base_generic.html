@@ -9,59 +9,127 @@
         integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <style>
+
+        .topnav {
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #002d4f/*#002d4f*/;
+        }
+        .navul {
+            list-style-type: none;
+            margin-left: 20%;
+            margin-right: 20%;
+        }
+
+        .topnav .navli {
+            float: left;
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* Change the link color to #111 (black) on hover */
+        .navli a:hover {
+            color: white;
+        }
+
+        .whole {
+            margin-top: 50px;
+            margin-left: 20%;
+            margin-right: 20%;
+            background-color: #f1f3f4;
+            padding: 20px;
+        }
+        body{
+            background-color: #f8f9fa;
+        }
+        .branding{
+            text-transform:uppercase;
+            color: white;
+            font-weight: bold;
+        }
+        .user{
+            text-transform: capitalize;
+            color: white;
+        }
+        
+        #borrowed{
+            border-collapse: collapse;
+            width: 100%;
+        }
+        #borrowed td, #borrowed th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        #borrowed tr:nth-child(even){
+            background-color: #f2f2f2;
+        }
+        #borrowed tr:hover {
+            background-color: #ddd;
+        }
+
+        #borrowed th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #075b9a;
+            color: white;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-sm-2">
-                {% block sidebar %}
-                <ul class="sidebar-nav">
-                    <li><a href="{% url 'index' %}">Home</a></li>
-                    <li><a href="{% url 'books' %}">All books</a></li>
-                    <li><a href="{% url 'authors' %}">All authors</a></li>
-                    {% if user.is_authenticated %}
-                    <li>User: {{ user.get_username }}</li>
-                    <li><a href="{% url 'my-borrowed' %}">My Borrowed</a></li>
-                    <li><a href="{% url 'logout'%}?next={{request.path}}">Logout</a></li>
-                    {% else %}
-                    <li><a href="{% url 'login'%}?next={{request.path}}">Login</a></li>
-                    {% endif %}
+    <div class="topnav">
+        <ul class="navul active" style="list-style-type: none;">
+            <li class="navli"><a href="{% url 'index' %}" class="branding">Scrible Library</a></li>
+            <li class="navli"><a href="{% url 'index' %}">Home</a></li>
+            <li class="navli"><a href="{% url 'books' %}">Books</a></li>
+            <li class="navli"><a href="{% url 'authors' %}">Authors</a></li>
+            {% if perms.catalog.can_mark_returned %}
+            <li class="navli"><a href="{% url 'all-borrowed' %}">All Issued</a></li>
+            {% endif %}
 
-                    {% if user.is_staff %}
-                    <hr />
-                    <ul class="sidebar-nav">
-                        <li>Staff</li>
-                        {% if perms.catalog.can_mark_returned %}
-                        <li><a href="{% url 'all-borrowed' %}">All borrowed</a></li>
-                        {% endif %}
-                    </ul>
-                    {% endif %}
-                </ul>
-                {% endblock %}
-            </div>
-            <div class="col-sm-10 ">
-                {% block content %} {% endblock %}
+            {% if user.is_authenticated %}
+            <li class="navli"><a href="" class="user">{{ user.get_username }}</a></li>
+            <li class="navli"><a href="{% url 'my-borrowed' %}">My Borrowed</a></li>
+            <li class="navli"><a href="{% url 'logout'%}?next={{request.path}}">Logout</a></li>
+            {% else %}
+            <li class="navli"><a href="{% url 'login'%}?next={{request.path}}">Login</a></li>
+            {% endif %}
 
-                {% block pagination %}
-                {% if is_paginated %}
-                <div class="pagination">
-                    <span class="page-links">
-                        {% if page_obj.has_previous %}
-                        <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}">Previous</a>
-                        {% endif %}
-                        <span class="page-current">
-                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-                        </span>
-                        {% if page_obj.has_next %}
-                        <a href="{{ request.path }}?page={{ page_obj.next_page_number }}">Next</a>
-                        {% endif %}
-                    </span>
-                </div>
+            {% if user.is_staff %}
+            <li class="navli">Staff</li>
+            {% else %}
+            <li class="navli">Student</li>
+            {% endif %}
+        </ul>
+    </div>
+    <div class="whole">
+        {% block content %} {% endblock %}
+
+        {% block pagination %}
+        {% if is_paginated %}
+        <div class="pagination">
+            <span class="page-links">
+                {% if page_obj.has_previous %}
+                <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}">Previous</a>
                 {% endif %}
-                {% endblock %}
-            </div>
+                <span class="page-current">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+                </span>
+                {% if page_obj.has_next %}
+                <a href="{{ request.path }}?page={{ page_obj.next_page_number }}">Next</a>
+                {% endif %}
+            </span>
         </div>
+        {% endif %}
+        {% endblock %}
     </div>
 </body>
 

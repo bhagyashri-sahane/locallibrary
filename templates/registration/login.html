@@ -11,7 +11,7 @@
       <p>Your account doesn't have access to this page. To proceed,
       please login with an account that has access.</p>
     {% else %}
-      <p>Please login to see this page.</p>
+      <p>Sign In</p>
     {% endif %}
   {% endif %}
 
@@ -30,8 +30,8 @@
     <input type="submit" value="login" />
     <input type="hidden" name="next" value="{{ next }}" />
   </form>
-
+<!-- 
   {# Assumes you setup the password_reset view in your URLconf #}
-  <p><a href="{% url 'password_reset' %}">Lost password?</a></p>
+  <p><a href="{% url 'password_reset' %}">Lost password?</a></p> -->
 
 {% endblock %}

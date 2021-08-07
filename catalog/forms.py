@@ -1,3 +1,6 @@
+from django.forms import widgets
+from django.forms.widgets import ChoiceWidget
+from catalog import models
 import datetime
 
 from django import forms
@@ -20,3 +23,15 @@ class RenewBookForm(forms.Form):
 
         # Remember to always return the cleaned data.
         return data
+
+
+LOAN_STATUS = (
+        ('m', 'Maintenance'),
+        ('o', 'On loan'),
+        ('a', 'Available'),
+        ('r', 'Reserved'),
+    )
+
+
+class ReturnBookForm(forms.Form):
+    status =  forms.ChoiceField(label='Record As ',choices=LOAN_STATUS)
