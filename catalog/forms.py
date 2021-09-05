@@ -1,5 +1,6 @@
 from django.forms import widgets
 from django.forms.widgets import ChoiceWidget
+from django.contrib.auth import get_user_model
 from catalog import models
 import datetime
 
@@ -35,3 +36,13 @@ LOAN_STATUS = (
 
 class ReturnBookForm(forms.Form):
     status =  forms.ChoiceField(label='Record As ',choices=LOAN_STATUS)
+
+
+class IssueBookForm(forms.Form):
+    status =  forms.ChoiceField(label='Record As ',choices=LOAN_STATUS)
+    renewal_date = forms.DateField(help_text="Enter a date between now and 4 weeks (default 3).")
+    User = get_user_model()
+    borrower = forms.ModelChoiceField(
+            widget=forms.Select,
+            queryset=User.objects.all(),
+        )

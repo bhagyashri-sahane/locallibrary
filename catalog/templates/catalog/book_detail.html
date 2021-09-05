@@ -11,17 +11,27 @@
 
   <div style="margin-left:20px;margin-top:20px">
     <h4>Copies</h4>
-
+    
     {% for copy in book.bookinstance_set.all %}
       <hr>
-      <p class="{% if copy.status == 'a' %}text-success{% elif copy.status == 'm' %}text-danger{% else %}text-warning{% endif %}">
-        {{ copy.get_status_display }}
-      </p>
-      {% if copy.status != 'a' %}
+      <div>
+        <p
+          class="{% if copy.status == 'a' %}text-success{% elif copy.status == 'm' %}text-danger{% else %}text-warning{% endif %}">
+          {{ copy.get_status_display }}
+        </p>
+        {% if copy.status != 'a' %}
         <p><strong>Due to be returned:</strong> {{ copy.due_back }}</p>
-      {% endif %}
-      <p><strong>Imprint:</strong> {{ copy.imprint }}</p>
-      <p class="text-muted"><strong>Id:</strong> {{ copy.id }}</p>
+        {% endif %}
+        <p><strong>Imprint:</strong> {{ copy.imprint }}</p>
+        <p class="text-muted"><strong>Id:</strong> {{ copy.id }}</p>
+      </div>
+      <div>
+        {% if copy.status == 'a' %}
+          <a href="{% url 'book_issue' copy.id %}">Issue</a>
+        {% else %}
+        <a href="{% url 'book_return' copy.id %}">Return</a>
+        {% endif %}
+      </div>
     {% endfor %}
   </div>
 {% endblock %}

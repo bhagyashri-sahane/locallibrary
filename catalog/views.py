@@ -10,11 +10,74 @@ from django.views.generic.edit import CreateView, DeleteView, UpdateView
 
 from catalog import models
 from catalog import forms
-from catalog.forms import RenewBookForm, ReturnBookForm
+from catalog.forms import RenewBookForm, ReturnBookForm, IssueBookForm
 
 from .models import Author, Book, BookInstance, Genre
 
 # Create your views here.
+
+class BookListView(generic.ListView):
+    model = Book
+    paginate_by = 10
+
+
+class BookDetailView(generic.DetailView):
+    model = Book
+
+class AuthorListView(generic.ListView):
+    model = Author
+
+class AuthorDetailView(generic.DetailView):
+    model = Author
+
+class LoanedBooksByUserListView(LoginRequiredMixin,generic.ListView):
+    """Generic class-based view listing books on loan to current user."""
+    model = BookInstance
+    template_name ='catalog/bookinstance_list_borrowed_user.html'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return BookInstance.objects.filter(borrower=self.request.user).filter(status__exact='o').order_by('due_back')
+
+class AuthorCreate(CreateView):
+    model = Author
+    fields = ['first_name', 'last_name', 'date_of_birth', 'date_of_death']
+    initial = {'date_of_death': '11/06/2020'}
+
+class AuthorUpdate(UpdateView):
+    model = Author
+    fields = '__all__' # Not recommended (potential security issue if more fields added)
+
+class AuthorDelete(DeleteView):
+    model = Author
+    success_url = reverse_lazy('authors')
+
+class LoanedBooksAllListView(PermissionRequiredMixin, generic.ListView):
+    """Generic class-based view listing all books on loan. Only visible to users with can_mark_returned permission."""
+    model = BookInstance
+    permission_required = 'catalog.can_mark_returned'
+    template_name = 'catalog/bookinstance_list_borrowed_all.html'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return BookInstance.objects.filter(status__exact='o').order_by('due_back')
+
+class BookCreate(PermissionRequiredMixin, CreateView):
+    model = Book
+    fields = ['title', 'author', 'summary', 'isbn', 'genre', 'language']
+    permission_required = 'catalog.can_mark_returned'
+
+class BookUpdate(PermissionRequiredMixin, UpdateView):
+    model = Book
+    fields = ['title', 'author', 'summary', 'isbn', 'genre', 'language']
+    permission_required = 'catalog.can_mark_returned'
+
+
+class BookDelete(PermissionRequiredMixin, DeleteView):
+    model = Book
+    success_url = reverse_lazy('books')
+    permission_required = 'catalog.can_mark_returned'
+
 
 def index(request):
     """View function for Home Page of Site"""
@@ -46,28 +109,6 @@ def index(request):
     #Render the HTML Template with data in the context variable context
     return render(request, 'index.html', context=context)
 
-class BookListView(generic.ListView):
-    model = Book
-    paginate_by = 10
-
-
-class BookDetailView(generic.DetailView):
-    model = Book
-
-class AuthorListView(generic.ListView):
-    model = Author
-
-class AuthorDetailView(generic.DetailView):
-    model = Author
-
-class LoanedBooksByUserListView(LoginRequiredMixin,generic.ListView):
-    """Generic class-based view listing books on loan to current user."""
-    model = BookInstance
-    template_name ='catalog/bookinstance_list_borrowed_user.html'
-    paginate_by = 10
-
-    def get_queryset(self):
-        return BookInstance.objects.filter(borrower=self.request.user).filter(status__exact='o').order_by('due_back')
 
 @login_required
 @permission_required('catalog.can_mark_returned', raise_exception=True)
@@ -127,41 +168,30 @@ def book_return(request, pk):
 
     return render(request, 'catalog/book_return.html', context)
 
-class AuthorCreate(CreateView):
-    model = Author
-    fields = ['first_name', 'last_name', 'date_of_birth', 'date_of_death']
-    initial = {'date_of_death': '11/06/2020'}
 
-class AuthorUpdate(UpdateView):
-    model = Author
-    fields = '__all__' # Not recommended (potential security issue if more fields added)
+@login_required
+@permission_required('catalog.can_mark_returned', raise_exception=True)
+def book_issue(request, pk):
+    book_instance = get_object_or_404(BookInstance, pk=pk)
 
-class AuthorDelete(DeleteView):
-    model = Author
-    success_url = reverse_lazy('authors')
+    if request.method == 'POST':
+        form = IssueBookForm(request.POST)
+        if form.is_valid():
+            book_instance.status = form.cleaned_data['status']
+            book_instance.borrower = form.cleaned_data['borrower']
+            book_instance.due_back = form.cleaned_data['renewal_date']
+            book_instance.save()
 
-class LoanedBooksAllListView(PermissionRequiredMixin, generic.ListView):
-    """Generic class-based view listing all books on loan. Only visible to users with can_mark_returned permission."""
-    model = BookInstance
-    permission_required = 'catalog.can_mark_returned'
-    template_name = 'catalog/bookinstance_list_borrowed_all.html'
-    paginate_by = 10
+            return HttpResponseRedirect(reverse('all-borrowed') )
 
-    def get_queryset(self):
-        return BookInstance.objects.filter(status__exact='o').order_by('due_back')
+    else:
+        proposed_renewal_date = datetime.date.today() + datetime.timedelta(weeks=3)
+        status = BookInstance.LOAN_STATUS[2]
+        form = IssueBookForm(initial={'status': status, 'renewal_date':proposed_renewal_date})
 
-class BookCreate(PermissionRequiredMixin, CreateView):
-    model = Book
-    fields = ['title', 'author', 'summary', 'isbn', 'genre', 'language']
-    permission_required = 'catalog.can_mark_returned'
+    context = {
+        'form': form,
+        'book_instance': book_instance,
+    }
 
-class BookUpdate(PermissionRequiredMixin, UpdateView):
-    model = Book
-    fields = ['title', 'author', 'summary', 'isbn', 'genre', 'language']
-    permission_required = 'catalog.can_mark_returned'
-
-
-class BookDelete(PermissionRequiredMixin, DeleteView):
-    model = Book
-    success_url = reverse_lazy('books')
-    permission_required = 'catalog.can_mark_returned'
+    return render(request, 'catalog/book_issue.html', context)
